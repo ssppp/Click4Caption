@@ -1,0 +1,29 @@
+model:
+  arch: click4caption
+  model_type: pretrain_vicuna
+  freeze_vit: True
+  freeze_qformer: False
+  max_txt_len: 160
+  end_sym: "###"
+  low_resource: False  #True
+  # prompt_path: "prompts/alignment.txt"
+  # prompt_template: '###Human: {} ###Assistant: '
+
+  delete_vit_cls_token: True
+  add_img_pe: True
+  use_vit_multiblock_feat: [9, 19, 29, 38]
+  ckpt: 'cached_model/click4caption_13b.pth'
+
+
+datasets:
+  cc_sbu_align:
+    vis_processor:
+      train:
+        name: "blip2_image_eval"
+        image_size: 224
+    text_processor:
+      train:
+        name: "blip_caption"
+
+run:
+  task: image_text_pretrain
