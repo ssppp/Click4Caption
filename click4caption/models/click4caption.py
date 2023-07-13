@@ -27,7 +27,7 @@ class Click4Caption(Blip2Base):
     def __init__(
         self,
         vit_model="eva_clip_g",
-        q_former_model="https://storage.googleapis.com/sfr-vision-language-research/LAVIS/models/BLIP2/blip2_pretrained_flant5xxl.pth",
+        q_former_model=None,
         img_size=224,
         drop_path_rate=0,
         use_grad_checkpoint=False,
@@ -63,10 +63,13 @@ class Click4Caption(Blip2Base):
                 param.requires_grad = False
             self.visual_encoder = self.visual_encoder.eval()
             self.visual_encoder.train = disabled_train
-            for name, param in self.ln_vision.named_parameters():
-                param.requires_grad = False
-            self.ln_vision = self.ln_vision.eval()
-            self.ln_vision.train = disabled_train
+            if use_vit_multiblock_feat or img_size != 224:
+                print('==> release the ln_vision param')
+            else:
+                for name, param in self.ln_vision.named_parameters():
+                    param.requires_grad = False
+                self.ln_vision = self.ln_vision.eval()
+                self.ln_vision.train = disabled_train
             logging.info("freeze vision encoder")
         print('Loading VIT Done')
 
@@ -80,7 +83,8 @@ class Click4Caption(Blip2Base):
         for layer in self.Qformer.bert.encoder.layer:
             layer.output = None
             layer.intermediate = None
-        # self.load_from_pretrained(url_or_filename=q_former_model)
+        if q_former_model:
+            self.load_from_pretrained(url_or_filename=q_former_model)
 
         if freeze_qformer:
             for name, param in self.Qformer.named_parameters():
@@ -256,8 +260,18 @@ class Click4Caption(Blip2Base):
             return img_embeds, atts_img
 
     def forward(self, samples):
-        image = samples["image"]
-        img_embeds, atts_img = self.encode_img(image)
+        if "bbox" in samples:
+            image, bbox = samples["image"], samples["bbox"]
+            img_embeds, atts_img, _ = self.encode_img_with_bbox(image, bbox)
+        else:
+            image = samples["image"]
+            _img_size_upper = self.img_size
+            # bbox = torch.tensor([[0, 0], [_img_size_upper, _img_size_upper]]).unsqueeze(0).unsqueeze(0).expand(image.shape[0], -1, -1, -1).to(image.device)
+            _rand_top_left = 7 * torch.rand(image.shape[0], 1, 1, 2)  # 7 is half of vit patch-size
+            _rand_bottom_right = _img_size_upper - 7 * torch.rand(image.shape[0], 1, 1, 2)
+            bbox = torch.cat([_rand_top_left, _rand_bottom_right], dim=2).to(image.device)
+            img_embeds, atts_img, _ = self.encode_img_with_bbox(image, bbox)
+
         if hasattr(samples, 'question_split'):  # VQA dataset
             print('VQA Batch')
             vqa_prompt = '###Human: <Img><ImageHere></Img> '
@@ -268,7 +282,12 @@ class Click4Caption(Blip2Base):
 
         self.llama_tokenizer.padding_side = "right"
 
-        text = [t + self.end_sym for t in samples["text_input"]]
+        if "bbox" in samples:
+            _textes = list(zip(*samples["text_input"]))  # num_regions * bsz -> bsz * num_regions
+            assert len(_textes) == samples["image"].shape[0]
+            text = [region_text + self.end_sym for sample in _textes for region_text in sample]
+        else:
+            text = [t + self.end_sym for t in samples["text_input"]]
 
         to_regress_tokens = self.llama_tokenizer(
             text,
@@ -314,7 +333,7 @@ class Click4Caption(Blip2Base):
     @classmethod
     def from_config(cls, cfg):
         vit_model = cfg.get("vit_model", "eva_clip_g")
-        q_former_model = cfg.get("q_former_model", "https://storage.googleapis.com/sfr-vision-language-research/LAVIS/models/BLIP2/blip2_pretrained_flant5xxl.pth")
+        q_former_model = cfg.get("q_former_model", None)
         img_size = cfg.get("image_size")
         num_query_token = cfg.get("num_query_token")
         llama_model = cfg.get("llama_model")

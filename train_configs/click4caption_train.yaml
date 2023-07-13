@@ -1,0 +1,92 @@
+model:
+  arch: click4caption
+  model_type: pretrain_vicuna
+  freeze_vit: True
+  freeze_qformer: False
+  max_txt_len: 32
+  end_sym: "###"
+
+  q_former_model: 'cached_model/blip2_pretrained_flant5xxl.pth'
+  ### 13b
+  llama_model: 'cached_model/vicuna-13b-v0'
+  llama_proj_ckpt: 'cached_model/pretrained_minigpt4.pth'
+  ### 7b
+  # llama_model: 'cached_model/vicuna-7b-v0'
+  # llama_proj_ckpt: 'cached_model/prerained_minigpt4_7b.pth'
+
+  delete_vit_cls_token: True
+  add_img_pe: True
+  use_vit_multiblock_feat: [9, 19, 29, 38]
+
+
+datasets:
+  vg:
+    build_info:
+      storage: '/group/30042/public_datasets/VisualGenome'  #/path/to/vg_dataset/
+    vis_processor:
+      train:
+        name: "blip2_image_eval"  # NOTE: eval
+        image_size: 224
+    text_processor:
+      train:
+        name: "blip_caption"
+    num_regions: 12
+    # special_batch_size: 1
+    sample_ratio: 5
+  textocr:
+    build_info:
+      storage: '/group/30042/public_datasets/ocr'  #/path/to/textocr_dataset/
+    vis_processor:
+      train:
+        name: "blip2_image_eval"  # NOTE: eval
+        image_size: 224
+    text_processor:
+      train:
+        name: "blip_caption"
+    num_regions: 12
+    # special_batch_size: 1
+    sample_ratio: 1
+  laion:
+    build_info:
+      storage: '/group/30042/public_datasets/LAION-400M/raw/data/{00000..42756}.tar'  #/path/to/laion_dataset/{00000..42756}.tar
+    vis_processor:
+      train:
+        name: "blip2_image_train"
+        image_size: 224
+    text_processor:
+      train:
+        name: "blip_caption"
+    sample_ratio: 3
+    special_batch_size: 12
+
+
+run:
+  task: image_text_pretrain
+  # optimizer
+  lr_sched: "linear_warmup_cosine_lr"
+  init_lr: 5e-5
+  min_lr: 1e-5
+  warmup_lr: 1e-6
+
+  weight_decay: 0.05
+  max_epoch: 30
+  iters_per_epoch: 10000
+  batch_size_train: 1
+  batch_size_eval: 12
+  num_workers: 4
+  warmup_steps: 20000
+  # accum_grad_iters: 2
+
+  seed: 42
+  output_dir: "output/"
+
+  amp: True
+  resume_ckpt_path: null
+
+  evaluate: False 
+  train_splits: ["train"]
+
+  device: "cuda"
+  world_size: 1
+  dist_url: "env://"
+  distributed: True

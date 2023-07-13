@@ -1,0 +1,5 @@
+datasets:
+  textocr:
+    data_type: images
+    build_info:
+      storage: /path/to/textocr_dataset/

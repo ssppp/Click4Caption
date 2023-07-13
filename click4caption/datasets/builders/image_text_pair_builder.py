@@ -6,6 +6,8 @@ from click4caption.common.registry import registry
 from click4caption.datasets.builders.base_dataset_builder import BaseDatasetBuilder
 from click4caption.datasets.datasets.laion_dataset import LaionDataset
 from click4caption.datasets.datasets.cc_sbu_dataset import CCSBUDataset, CCSBUAlignDataset
+from click4caption.datasets.datasets.vg_dataset import VGDataset
+from click4caption.datasets.datasets.textocr_dataset import TextOCRDataset
 
 
 @registry.register_builder("cc_sbu")
@@ -103,3 +105,45 @@ class CCSBUAlignBuilder(BaseDatasetBuilder):
         )
 
         return datasets
+
+
+@registry.register_builder("vg")
+class VGBuilder(BaseDatasetBuilder):
+    train_dataset_cls = VGDataset
+
+    DATASET_CONFIG_DICT = {
+        "default": "configs/datasets/vg/defaults.yaml",
+    }
+
+    def build_datasets(self):
+        # at this point, all the annotations and image/videos should be all downloaded to the specified locations.
+        logging.info("Building datasets...")
+        self.build_processors()
+
+        build_info = self.config.build_info
+        storage_path = build_info.storage
+
+        datasets = dict()
+
+        if not os.path.exists(storage_path):
+            warnings.warn("storage path {} does not exist.".format(storage_path))
+
+        # create datasets
+        dataset_cls = self.train_dataset_cls
+        datasets['train'] = dataset_cls(
+            vis_processor=self.vis_processors["train"],
+            text_processor=self.text_processors["train"],
+            location=storage_path,
+            num_regions=self.config.num_regions,
+            image_size=self.config.vis_processor.train.image_size,
+        )
+
+        return datasets
+
+
+@registry.register_builder("textocr")
+class TextOCRBuilder(VGBuilder):
+    train_dataset_cls = TextOCRDataset
+    DATASET_CONFIG_DICT = {
+        "default": "configs/datasets/textocr/defaults.yaml",
+    }

@@ -59,6 +59,8 @@ class BaseTask:
             dataset['train'].name = name
             if 'sample_ratio' in dataset_config:
                 dataset['train'].sample_ratio = dataset_config.sample_ratio
+            if 'special_batch_size' in dataset_config:
+                dataset['train'].special_batch_size = dataset_config.special_batch_size
 
             datasets[name] = dataset
 
@@ -217,6 +219,8 @@ class BaseTask:
 
             with torch.cuda.amp.autocast(enabled=use_amp):
                 loss = self.train_step(model=model, samples=samples)
+                if accum_grad_iters > 1:
+                    loss = loss / accum_grad_iters
 
             # after_train_step()
             if use_amp:
@@ -233,7 +237,8 @@ class BaseTask:
                     optimizer.step()
                 optimizer.zero_grad()
 
-            metric_logger.update(loss=loss.item())
+            # metric_logger.update(loss=loss.item())
+            metric_logger.update(loss=loss.item()*accum_grad_iters)
             metric_logger.update(lr=optimizer.param_groups[0]["lr"])
 
         # after train_epoch()

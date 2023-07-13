@@ -10,6 +10,6 @@ omegaconf==2.3.0
 opencv-python
 iopath
 decord
-gradio
+gradio==3.35.2
 sentencepiece
 fairscale

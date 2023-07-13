@@ -1,0 +1,5 @@
+datasets:
+  vg:
+    data_type: images
+    build_info:
+      storage: /path/to/vg_dataset/

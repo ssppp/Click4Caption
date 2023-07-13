@@ -2,6 +2,7 @@ click4caption/output/
 cached_model/*
 !cached_model/.gitkeep
 run_demo.sh
+run_train.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

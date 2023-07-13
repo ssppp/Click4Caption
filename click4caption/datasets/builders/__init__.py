@@ -9,14 +9,18 @@ from click4caption.datasets.builders.base_dataset_builder import load_dataset_co
 from click4caption.datasets.builders.image_text_pair_builder import (
     CCSBUBuilder,
     LaionBuilder,
-    CCSBUAlignBuilder
+    CCSBUAlignBuilder,
+    VGBuilder,
+    TextOCRBuilder,
 )
 from click4caption.common.registry import registry
 
 __all__ = [
     "CCSBUBuilder",
     "LaionBuilder",
-    "CCSBUAlignBuilder"
+    "CCSBUAlignBuilder",
+    "VGBuilder",
+    "TextOCRBuilder",
 ]
 
 

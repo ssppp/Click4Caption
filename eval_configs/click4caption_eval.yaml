@@ -6,13 +6,17 @@ model:
   max_txt_len: 160
   end_sym: "###"
   low_resource: False  #True
-  # prompt_path: "prompts/alignment.txt"
-  # prompt_template: '###Human: {} ###Assistant: '
 
   delete_vit_cls_token: True
   add_img_pe: True
   use_vit_multiblock_feat: [9, 19, 29, 38]
+
+  ### 13b
+  llama_model: "cached_model/vicuna-13b-v0"
   ckpt: 'cached_model/click4caption_13b.pth'
+  ### 7b
+  # llama_model: "cached_model/vicuna-7b-v0"
+  # ckpt: 'cached_model/click4caption_7b.pth'
 
 
 datasets:
