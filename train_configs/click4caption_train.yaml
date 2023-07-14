@@ -22,7 +22,7 @@ model:
 datasets:
   vg:
     build_info:
-      storage: '/group/30042/public_datasets/VisualGenome'  #/path/to/vg_dataset/
+      storage: /path/to/vg_dataset/
     vis_processor:
       train:
         name: "blip2_image_eval"  # NOTE: eval
@@ -35,7 +35,7 @@ datasets:
     sample_ratio: 5
   textocr:
     build_info:
-      storage: '/group/30042/public_datasets/ocr'  #/path/to/textocr_dataset/
+      storage: /path/to/textocr_dataset/
     vis_processor:
       train:
         name: "blip2_image_eval"  # NOTE: eval
@@ -48,7 +48,7 @@ datasets:
     sample_ratio: 1
   laion:
     build_info:
-      storage: '/group/30042/public_datasets/LAION-400M/raw/data/{00000..42756}.tar'  #/path/to/laion_dataset/{00000..42756}.tar
+      storage: /path/to/laion_dataset/{00000..42756}.tar
     vis_processor:
       train:
         name: "blip2_image_train"
